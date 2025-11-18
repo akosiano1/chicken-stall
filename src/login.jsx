@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import { logActivity, auditActions, auditEntities } from './utils/auditLog'
@@ -12,6 +12,56 @@ function Login() {
     const [formData, setFormData] = useState({email: '', password: ''})
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
+
+    // Handle email confirmation callback
+    useEffect(() => {
+        const handleEmailConfirmation = async () => {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1))
+            const accessToken = hashParams.get('access_token')
+            const type = hashParams.get('type')
+
+            if (accessToken && type === 'signup') {
+                try {
+                    // Set the session with the access token
+                    const { data, error } = await supabase.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: hashParams.get('refresh_token') || '',
+                    })
+
+                    if (error) {
+                        showError('Failed to confirm email: ' + error.message)
+                        // Clean up URL
+                        window.history.replaceState({}, document.title, '/login')
+                        return
+                    }
+
+                    if (data.user) {
+                        showSuccess('Email confirmed successfully! You can now log in.')
+                        // Clean up URL
+                        window.history.replaceState({}, document.title, '/login')
+                        
+                        // Optionally auto-login the user
+                        const { data: profile, error: profileError } = await supabase
+                            .from('profiles')
+                            .select("*")
+                            .eq('id', data.user.id)
+                            .single()
+
+                        if (!profileError && profile) {
+                            localStorage.setItem('userProfile', JSON.stringify(profile))
+                            navigate('/dashboard')
+                        }
+                    }
+                } catch (err) {
+                    console.error('Email confirmation error:', err)
+                    showError('An error occurred during email confirmation.')
+                    window.history.replaceState({}, document.title, '/login')
+                }
+            }
+        }
+
+        handleEmailConfirmation()
+    }, [navigate, showError, showSuccess])
 
     const handleInputChange = (e) => {
         const {name, value} = e.target

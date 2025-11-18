@@ -58,3 +58,26 @@ If you encounter import errors during deployment:
 
 The function code will automatically handle CORS for both localhost and production domains even if `ALLOWED_ORIGIN` is set to localhost only.
 
+## Configuring Site URL for Email Confirmations
+
+The function uses the `SITE_URL` environment variable to set where users are redirected after confirming their email. 
+
+### Option 1: Set SITE_URL Environment Variable (Recommended)
+
+```bash
+supabase secrets set SITE_URL="https://chicken-stall-sebastian-rafhael-garcias-projects.vercel.app" --project-ref YOUR_PROJECT_REF
+```
+
+### Option 2: Configure in Supabase Dashboard
+
+1. Go to **Project Settings** → **Authentication**
+2. Scroll to **Site URL**
+3. Set it to: `https://chicken-stall-sebastian-rafhael-garcias-projects.vercel.app`
+4. Also add this URL to **Redirect URLs** section
+
+### Option 3: Default Behavior
+
+If `SITE_URL` is not set, the function defaults to the Vercel deployment URL. However, it's recommended to set it explicitly.
+
+**Important:** Make sure your production URL is added to the **Redirect URLs** list in Supabase Authentication settings, otherwise email confirmation links will fail.
+

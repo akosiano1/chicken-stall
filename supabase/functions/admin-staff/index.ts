@@ -4,6 +4,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 const ALLOWED_ORIGIN_ENV = Deno.env.get("ALLOWED_ORIGIN")
+// Site URL for email confirmation redirects (defaults to Vercel deployment)
+const SITE_URL = Deno.env.get("SITE_URL") || "https://chicken-stall-sebastian-rafhael-garcias-projects.vercel.app"
 
 // Dynamic CORS origin handler
 function getCorsOrigin(req: Request): string {
@@ -166,6 +168,9 @@ serve(async (req) => {
       const { error: inviteError } = await supabaseAdmin.auth.resend({
         type: "signup",
         email,
+        options: {
+          emailRedirectTo: `${SITE_URL}/login`,
+        },
       })
       if (inviteError) {
         console.error("Failed to send confirmation email", inviteError)
@@ -212,6 +217,9 @@ serve(async (req) => {
       const { error } = await supabaseAdmin.auth.resend({
         type: "signup",
         email: targetEmail,
+        options: {
+          emailRedirectTo: `${SITE_URL}/login`,
+        },
       })
 
       if (error) {
