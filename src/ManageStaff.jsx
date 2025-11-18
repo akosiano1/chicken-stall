@@ -139,12 +139,8 @@ function ManageStaff() {
         throw new Error('Admin API did not return a userId for the new staff member.');
       }
 
-      // Send the confirmation email manually (best effort)
-      try {
-        await resendStaffInvite(staffEmail);
-      } catch (resendError) {
-        console.warn('Failed to trigger verification email:', resendError);
-      }
+      // Note: Confirmation email is automatically sent by the Edge Function
+      // No need to call resendStaffInvite here
 
       const newProfile = {
         id: userId,
