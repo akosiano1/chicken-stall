@@ -59,7 +59,7 @@ const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
 
-async function requireAdmin(req: Request) {
+async function getAuthenticatedUser(req: Request) {
   const jwt = req.headers.get("Authorization")?.replace("Bearer ", "")
   if (!jwt) return null
 
@@ -78,7 +78,12 @@ async function requireAdmin(req: Request) {
     .eq("id", user.id)
     .single()
 
-  return profile?.role === "admin" ? user : null
+  return profile ? { user, role: profile.role } : null
+}
+
+async function requireAdmin(req: Request) {
+  const authData = await getAuthenticatedUser(req)
+  return authData?.role === "admin" ? authData.user : null
 }
 
 function jsonResponse(body: Record<string, unknown>, status = 200, req?: Request) {
@@ -103,11 +108,6 @@ serve(async (req) => {
       return textResponse("ok", 200, req)
     }
 
-    const admin = await requireAdmin(req)
-    if (!admin) {
-      return textResponse("Forbidden", 403, req)
-    }
-
     const url = new URL(req.url)
     const segments = url.pathname.replace(/^\/|\/$/g, "").split("/")
     // Expected path: /admin-staff/staff/...
@@ -116,6 +116,18 @@ serve(async (req) => {
 
     if (resource !== "staff") {
       return textResponse("Not Found", 404, req)
+    }
+
+    // GET /staff/:id/auth can be accessed by staff (their own) or admins (anyone's)
+    // All other endpoints require admin role
+    const isAuthEndpoint = req.method === "GET" && rest.length === 2 && rest[1] === "auth"
+    
+    if (!isAuthEndpoint) {
+      // Require admin for all endpoints except GET /staff/:id/auth
+      const admin = await requireAdmin(req)
+      if (!admin) {
+        return textResponse("Forbidden", 403, req)
+      }
     }
 
     // POST /staff -> create staff
@@ -260,8 +272,22 @@ serve(async (req) => {
     }
 
     // GET /staff/:id/auth -> auth metadata
+    // Allow staff to access their own auth data, or admins to access anyone's
     if (req.method === "GET" && rest.length === 2 && rest[1] === "auth") {
       const staffId = rest[0]
+      
+      // Get the authenticated user (staff or admin)
+      const authData = await getAuthenticatedUser(req)
+      if (!authData) {
+        return textResponse("Forbidden", 403, req)
+      }
+
+      // Allow admins to access any user's auth data
+      // Allow staff to access only their own auth data
+      if (authData.role !== "admin" && authData.user.id !== staffId) {
+        return textResponse("Forbidden - You can only access your own auth data", 403, req)
+      }
+
       const { data, error } = await supabaseAdmin.auth.admin.getUserById(staffId)
       if (error || !data?.user) {
         return textResponse(error?.message ?? "User not found", 404, req)
