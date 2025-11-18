@@ -1,0 +1,25 @@
+# Cursor Rules for DaisyUI Integration
+
+## DaisyUI Configuration
+- This project uses DaisyUI 5 with Tailwind CSS 4
+- DaisyUI is already installed and configured in the CSS file
+- Use the llms.txt file for accurate DaisyUI component generation
+
+## Code Generation Guidelines
+- Always use DaisyUI class names when available
+- Follow DaisyUI component patterns and syntax
+- Use semantic color names (primary, secondary, accent, etc.) instead of Tailwind color names
+- Apply responsive design using Tailwind responsive prefixes
+- Use the component, part, style, behavior, color, size, placement, direction, and modifier class categories
+
+## File References
+- DaisyUI llms.txt: ./llms.txt
+- DaisyUI documentation: https://daisyui.com
+- Current CSS setup: @import "tailwindcss"; @plugin "daisyui";
+
+## Best Practices
+- Prefer DaisyUI components over custom CSS
+- Use Tailwind utility classes for customization when needed
+- Apply !important only as a last resort for CSS specificity issues
+- Use placeholder images from https://picsum.photos/ when needed
+- Follow Refactoring UI best practices for design decisions

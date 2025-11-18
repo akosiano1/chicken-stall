@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Staff Account</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">Welcome to Johnny's Chicken Stall!</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Main Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <h2 style="margin: 0 0 20px; color: #333333; font-size: 24px; font-weight: 600;">Confirm Your Staff Account</h2>
+                            
+                            <p style="margin: 0 0 20px; color: #666666; font-size: 16px; line-height: 1.6;">
+                                Hello and welcome! Your staff account has been created for <strong>Johnny's Chicken Stall</strong>. 
+                                To complete your registration and start accessing the system, please confirm your email address.
+                            </p>
+                            
+                            <!-- Account Details Box -->
+                            <div style="background-color: #f8f9fa; border-left: 4px solid #667eea; padding: 20px; margin: 24px 0; border-radius: 4px;">
+                                <p style="margin: 0 0 8px; color: #333333; font-size: 14px; font-weight: 600;">Account Details:</p>
+                                <p style="margin: 4px 0; color: #666666; font-size: 14px;">
+                                    <strong>Email:</strong> {{ .Email }}
+                                </p>
+                                <p style="margin: 4px 0; color: #666666; font-size: 14px;">
+                                    <strong>Status:</strong> <span style="color: #667eea;">Pending Confirmation</span>
+                                </p>
+                            </div>
+                            
+                            <!-- CTA Button -->
+                            <table role="presentation" style="width: 100%; margin: 32px 0;">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <a href="{{ .ConfirmationURL }}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);">
+                                            Confirm Email Address
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Alternative Link -->
+                            <p style="margin: 20px 0 0; color: #999999; font-size: 14px; line-height: 1.6;">
+                                Or copy and paste this link into your browser:<br>
+                                <a href="{{ .ConfirmationURL }}" style="color: #667eea; word-break: break-all;">{{ .ConfirmationURL }}</a>
+                            </p>
+                            
+                            <!-- Security Note -->
+                            <div style="margin-top: 32px; padding: 16px; background-color: #fff3cd; border-radius: 4px;">
+                                <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.6;">
+                                    <strong>🔒 Security Note:</strong> This confirmation link will expire in 24 hours for your security. 
+                                    If you didn't request this account, please ignore this email.
+                                </p>
+                            </div>
+                            
+                            <!-- What's Next Section -->
+                            <div style="margin-top: 32px; padding-top: 32px; border-top: 1px solid #e0e0e0;">
+                                <h3 style="margin: 0 0 16px; color: #333333; font-size: 18px; font-weight: 600;">What's Next?</h3>
+                                <ul style="margin: 0; padding-left: 20px; color: #666666; font-size: 15px; line-height: 1.8;">
+                                    <li>Click the confirmation button above to verify your email</li>
+                                    <li>Login to the dashboard using your email and password</li>
+                                    <li>Access the Point of Sale system and other features</li>
+                                    <li>Start managing sales and inventory for your assigned stall</li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Support Section -->
+                            <div style="margin-top: 32px; padding: 20px; background-color: #f0f4ff; border-radius: 4px;">
+                                <p style="margin: 0 0 8px; color: #333333; font-size: 14px; font-weight: 600;">Need Help?</p>
+                                <p style="margin: 0; color: #666666; font-size: 14px; line-height: 1.6;">
+                                    If you have any questions or need assistance, please contact your administrator or email 
+                                    <a href="mailto:admin@johnnyschickenstall.com" style="color: #667eea;">admin@johnnyschickenstall.com</a>
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px 40px; background-color: #f8f9fa; border-radius: 0 0 8px 8px; text-align: center;">
+                            <p style="margin: 0 0 8px; color: #666666; font-size: 14px;">
+                                <strong>Johnny's Chicken Stall</strong>
+                            </p>
+                            <p style="margin: 0 0 8px; color: #999999; font-size: 12px;">
+                                Your trusted partner in chicken business management
+                            </p>
+                            <p style="margin: 0; color: #999999; font-size: 12px;">
+                                This is an automated email. Please do not reply.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+
