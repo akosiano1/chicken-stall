@@ -1,7 +1,31 @@
 import { supabase } from '../supabaseClient'
 
-const ADMIN_API_BASE_URL =
-  (import.meta.env.VITE_ADMIN_API_URL || '/api/admin').replace(/\/$/, '')
+function deriveDefaultAdminApiBaseUrl() {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+  if (!supabaseUrl) {
+    return null
+  }
+
+  try {
+    const url = new URL(supabaseUrl)
+    const { protocol, hostname } = url
+
+    if (hostname.endsWith('.supabase.co')) {
+      const functionHost = hostname.replace('.supabase.co', '.functions.supabase.co')
+      return `${protocol}//${functionHost}/admin-staff`
+    }
+
+    return `${url.origin}/functions/v1/admin-staff`
+  } catch (error) {
+    console.warn('Unable to derive admin API URL from VITE_SUPABASE_URL', error)
+    return null
+  }
+}
+
+const rawAdminApiBaseUrl =
+  import.meta.env.VITE_ADMIN_API_URL || deriveDefaultAdminApiBaseUrl() || ''
+
+const ADMIN_API_BASE_URL = rawAdminApiBaseUrl.replace(/\/$/, '')
 
 async function getAccessToken() {
   const {
@@ -13,7 +37,9 @@ async function getAccessToken() {
 
 async function request(path, { method = 'GET', body } = {}) {
   if (!ADMIN_API_BASE_URL) {
-    throw new Error('Admin API base URL is not configured. Set VITE_ADMIN_API_URL.')
+    throw new Error(
+      'Admin API base URL is not configured. Set VITE_ADMIN_API_URL or ensure VITE_SUPABASE_URL is valid.',
+    )
   }
 
   const token = await getAccessToken()
@@ -63,7 +89,12 @@ export async function deleteStaffAccount(userId) {
 }
 
 export async function fetchUserAuthStatus(userId) {
+  if (!userId) {
+    throw new Error('User ID is required to fetch auth status.')
+  }
+
   return request(`/staff/${encodeURIComponent(userId)}/auth`)
 }
+
 
 
