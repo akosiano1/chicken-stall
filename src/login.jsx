@@ -16,16 +16,21 @@ function Login() {
     // Handle email confirmation callback
     useEffect(() => {
         const handleEmailConfirmation = async () => {
+            // Check both hash fragments and query parameters
             const hashParams = new URLSearchParams(window.location.hash.substring(1))
-            const accessToken = hashParams.get('access_token')
-            const type = hashParams.get('type')
+            const queryParams = new URLSearchParams(window.location.search)
+            
+            // Try hash first (newer format), then query params (older format)
+            const accessToken = hashParams.get('access_token') || queryParams.get('access_token')
+            const type = hashParams.get('type') || queryParams.get('type')
+            const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token')
 
-            if (accessToken && type === 'signup') {
+            if (accessToken && (type === 'signup' || type === 'email')) {
                 try {
                     // Set the session with the access token
                     const { data, error } = await supabase.auth.setSession({
                         access_token: accessToken,
-                        refresh_token: hashParams.get('refresh_token') || '',
+                        refresh_token: refreshToken || '',
                     })
 
                     if (error) {

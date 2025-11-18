@@ -174,7 +174,9 @@ serve(async (req) => {
       })
       if (inviteError) {
         console.error("Failed to send confirmation email", inviteError)
-        return textResponse(inviteError.message, 400, req)
+        // Don't fail the entire request if email sending fails - user is still created
+        // Log the error but continue
+        console.warn("User created but confirmation email failed to send:", inviteError.message)
       }
 
       return jsonResponse(
@@ -195,11 +197,12 @@ serve(async (req) => {
       }
 
       let targetEmail = email ?? null
+      let userId: string | null = null
 
       if (!targetEmail && staffId) {
         const { data: profile, error: profileLookupError } = await supabaseAdmin
           .from("profiles")
-          .select("email")
+          .select("email, id")
           .eq("id", staffId)
           .single()
 
@@ -208,10 +211,30 @@ serve(async (req) => {
         }
 
         targetEmail = profile.email
+        userId = profile.id
+      } else if (targetEmail) {
+        // Look up user by email to get their ID
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("email", targetEmail)
+          .single()
+        
+        if (profile) {
+          userId = profile.id
+        }
       }
 
       if (!targetEmail) {
         return textResponse("Missing email", 400, req)
+      }
+
+      // Check if user is already confirmed
+      if (userId) {
+        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(userId)
+        if (!authError && authUser?.user?.email_confirmed_at) {
+          return textResponse("User email is already confirmed", 400, req)
+        }
       }
 
       const { error } = await supabaseAdmin.auth.resend({
@@ -224,10 +247,16 @@ serve(async (req) => {
 
       if (error) {
         console.error("Failed to resend confirmation email", error)
-        return textResponse(error.message, 400, req)
+        // Provide more helpful error message
+        const errorMessage = error.message.includes("already confirmed") 
+          ? "User email is already confirmed"
+          : error.message.includes("not found")
+          ? "User not found"
+          : `Failed to resend email: ${error.message}`
+        return textResponse(errorMessage, 400, req)
       }
 
-      return jsonResponse({ message: "Email resent" }, 200, req)
+      return jsonResponse({ message: "Email resent successfully" }, 200, req)
     }
 
     // GET /staff/:id/auth -> auth metadata
