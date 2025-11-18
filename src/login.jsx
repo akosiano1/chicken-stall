@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabaseClient'
 import { logActivity, auditActions, auditEntities } from './utils/auditLog'
 import { useNotifications } from './contexts/NotificationContext'
+import logo from './logo.png'
 
 
 function Login() {
@@ -72,8 +73,8 @@ function Login() {
     return (
         <div className="min-h-screen bg-[#030712] flex items-center justify-center p-6 flex-col">
             <div className="text-center mb-8">
-                <div className="w-24 rounded avatar">
-                    <img src="./src/logo.png" />
+                <div className="w-24 rounded avatar bg-base-100/10 p-2 mx-auto">
+                    <img src={logo} alt="Fried Chicken Stall logo" className="w-full h-full object-contain" />
                 </div>
                 <h1 className="text-4xl font-extrabold text-[#f97316] mb-2 drop-shadow-lg">
                     SALES AND STOCK MONITOR SYSTEM

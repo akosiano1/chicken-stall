@@ -293,9 +293,14 @@ function PointOfSale() {
                       <div className="card-body p-4">
                         <div className='flex flex-row gap-4'>
                           <img
-                            src={item.image_url || '/default-image.jpg'}
+                            src={
+                              item.image_url && item.image_url.trim() !== ''
+                                ? item.image_url
+                                : 'https://picsum.photos/64?blur=2'
+                            }
                             alt={item.item_name}
-                            className="w-16 h-16 rounded-lg object-cover"
+                            className="w-16 h-16 rounded-lg object-cover bg-base-200"
+                            loading="lazy"
                           />
                           <div>
                             <h3 className="font-semibold text-lg">{item.item_name}</h3>
