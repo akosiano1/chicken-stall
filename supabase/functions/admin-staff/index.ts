@@ -1,14 +1,56 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { createClient } from "jsr:@supabase/supabase-js@2"
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*"
+const ALLOWED_ORIGIN_ENV = Deno.env.get("ALLOWED_ORIGIN")
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+// Dynamic CORS origin handler
+function getCorsOrigin(req: Request): string {
+  const requestOrigin = req.headers.get("origin")
+  
+  // If ALLOWED_ORIGIN is "*" or not set, allow all origins
+  if (ALLOWED_ORIGIN_ENV === "*" || !ALLOWED_ORIGIN_ENV) {
+    return requestOrigin || "*"
+  }
+  
+  // If ALLOWED_ORIGIN is set, check if it's a comma-separated list
+  const allowedOrigins = ALLOWED_ORIGIN_ENV.split(",").map(o => o.trim())
+  
+  // If request origin matches any allowed origin, return it
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin
+  }
+  
+  // Special handling: if request is from a production domain (vercel.app, netlify.app, etc.)
+  // and ALLOWED_ORIGIN only has localhost, allow the production origin anyway
+  if (requestOrigin) {
+    const isProductionDomain = 
+      requestOrigin.includes("vercel.app") ||
+      requestOrigin.includes("netlify.app") ||
+      requestOrigin.includes("github.io") ||
+      requestOrigin.startsWith("https://") // Any HTTPS origin is likely production
+    
+    const hasOnlyLocalhost = allowedOrigins.every(origin => 
+      origin.includes("localhost") || origin.includes("127.0.0.1")
+    )
+    
+    if (isProductionDomain && hasOnlyLocalhost) {
+      return requestOrigin
+    }
+  }
+  
+  // If no match and we have allowed origins, return the first one (fallback)
+  // This handles the case where origin header might be missing
+  return allowedOrigins[0] || "*"
+}
+
+function getCorsHeaders(req: Request) {
+  return {
+    "Access-Control-Allow-Origin": getCorsOrigin(req),
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+  }
 }
 
 const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
@@ -37,14 +79,16 @@ async function requireAdmin(req: Request) {
   return profile?.role === "admin" ? user : null
 }
 
-function jsonResponse(body: Record<string, unknown>, status = 200) {
+function jsonResponse(body: Record<string, unknown>, status = 200, req?: Request) {
+  const corsHeaders = req ? getCorsHeaders(req) : {}
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   })
 }
 
-function textResponse(message: string, status = 200) {
+function textResponse(message: string, status = 200, req?: Request) {
+  const corsHeaders = req ? getCorsHeaders(req) : {}
   return new Response(message, {
     status,
     headers: corsHeaders,
@@ -54,12 +98,12 @@ function textResponse(message: string, status = 200) {
 serve(async (req) => {
   try {
     if (req.method === "OPTIONS") {
-      return textResponse("ok", 200)
+      return textResponse("ok", 200, req)
     }
 
     const admin = await requireAdmin(req)
     if (!admin) {
-      return textResponse("Forbidden", 403)
+      return textResponse("Forbidden", 403, req)
     }
 
     const url = new URL(req.url)
@@ -69,7 +113,7 @@ serve(async (req) => {
     const rest = segments.slice(2)
 
     if (resource !== "staff") {
-      return textResponse("Not Found", 404)
+      return textResponse("Not Found", 404, req)
     }
 
     // POST /staff -> create staff
@@ -90,7 +134,7 @@ serve(async (req) => {
       }
 
       if (!email || !password || !fullName) {
-        return textResponse("Missing required fields", 400)
+        return textResponse("Missing required fields", 400, req)
       }
 
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
@@ -100,7 +144,7 @@ serve(async (req) => {
       })
 
       if (error || !data.user) {
-        return textResponse(error?.message ?? "Unable to create user", 400)
+        return textResponse(error?.message ?? "Unable to create user", 400, req)
       }
 
       const { error: profileError } = await supabaseAdmin.from("profiles").insert([
@@ -116,7 +160,7 @@ serve(async (req) => {
       ])
 
       if (profileError) {
-        return textResponse(profileError.message, 400)
+        return textResponse(profileError.message, 400, req)
       }
 
       const { error: inviteError } = await supabaseAdmin.auth.resend({
@@ -125,7 +169,7 @@ serve(async (req) => {
       })
       if (inviteError) {
         console.error("Failed to send confirmation email", inviteError)
-        return textResponse(inviteError.message, 400)
+        return textResponse(inviteError.message, 400, req)
       }
 
       return jsonResponse(
@@ -134,6 +178,7 @@ serve(async (req) => {
           confirmationSent: true,
         },
         200,
+        req,
       )
     }
 
@@ -154,14 +199,14 @@ serve(async (req) => {
           .single()
 
         if (profileLookupError || !profile?.email) {
-          return textResponse("User not found", 404)
+          return textResponse("User not found", 404, req)
         }
 
         targetEmail = profile.email
       }
 
       if (!targetEmail) {
-        return textResponse("Missing email", 400)
+        return textResponse("Missing email", 400, req)
       }
 
       const { error } = await supabaseAdmin.auth.resend({
@@ -171,10 +216,10 @@ serve(async (req) => {
 
       if (error) {
         console.error("Failed to resend confirmation email", error)
-        return textResponse(error.message, 400)
+        return textResponse(error.message, 400, req)
       }
 
-      return jsonResponse({ message: "Email resent" }, 200)
+      return jsonResponse({ message: "Email resent" }, 200, req)
     }
 
     // GET /staff/:id/auth -> auth metadata
@@ -182,7 +227,7 @@ serve(async (req) => {
       const staffId = rest[0]
       const { data, error } = await supabaseAdmin.auth.admin.getUserById(staffId)
       if (error || !data?.user) {
-        return textResponse(error?.message ?? "User not found", 404)
+        return textResponse(error?.message ?? "User not found", 404, req)
       }
 
       return jsonResponse(
@@ -191,6 +236,7 @@ serve(async (req) => {
           lastSignInAt: data.user.last_sign_in_at,
         },
         200,
+        req,
       )
     }
 
@@ -201,18 +247,18 @@ serve(async (req) => {
       await supabaseAdmin.from("profiles").delete().eq("id", staffId)
       const { error } = await supabaseAdmin.auth.admin.deleteUser(staffId)
       if (error) {
-        return textResponse(error.message, 400)
+        return textResponse(error.message, 400, req)
       }
 
       return new Response(null, {
         status: 204,
-        headers: corsHeaders,
+        headers: getCorsHeaders(req),
       })
     }
 
-    return textResponse("Not Found", 404)
+    return textResponse("Not Found", 404, req)
   } catch (error) {
     console.error("admin-staff error", error)
-    return jsonResponse({ message: "Internal Server Error" }, 500)
+    return jsonResponse({ message: "Internal Server Error" }, 500, req)
   }
 })
