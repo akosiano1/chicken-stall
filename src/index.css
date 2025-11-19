@@ -1,0 +1,110 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  /* Use our own paired light/dark themes and switch via data-theme */
+  themes: chicken-stall --default, chicken-stall-dark --prefersdark;
+  /* Use data-theme on html/body so we can toggle themes in JS */
+  root: "[data-theme]";
+  include: ;
+  exclude: ;
+  prefix: ;
+  logs: true;
+}
+
+/* Light theme - original chicken stall look */
+@plugin "daisyui/theme" {
+  name: "chicken-stall";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(98% 0.01 60);
+  --color-base-200: oklch(95% 0.02 60);
+  --color-base-300: oklch(92% 0.03 60);
+  --color-base-content: oklch(25% 0.05 60);
+
+  --color-primary: oklch(45% 0.15 35);
+  --color-primary-content: oklch(98% 0.01 60);
+  --color-secondary: oklch(55% 0.12 45);
+  --color-secondary-content: oklch(98% 0.01 60);
+  --color-accent: oklch(65% 0.15 25);
+  --color-accent-content: oklch(98% 0.01 60);
+
+  --color-neutral: oklch(40% 0.05 60);
+  --color-neutral-content: oklch(98% 0.01 60);
+
+  --color-info: oklch(70% 0.2 220);
+  --color-info-content: oklch(98% 0.01 220);
+  --color-success: oklch(65% 0.25 140);
+  --color-success-content: oklch(98% 0.01 140);
+  --color-warning: oklch(80% 0.25 50);
+  --color-warning-content: oklch(20% 0.05 50);
+  --color-error: oklch(65% 0.3 15);
+  --color-error-content: oklch(98% 0.01 15);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  --border: 1px;
+
+  --depth: 1;
+  --noise: 0;
+}
+
+/* Dark theme - keep branding, darken surfaces */
+@plugin "daisyui/theme" {
+  name: "chicken-stall-dark";
+  default: false;
+  prefersdark: true;
+  color-scheme: dark;
+
+  --color-base-100: oklch(20% 0.03 60);
+  --color-base-200: oklch(16% 0.03 60);
+  --color-base-300: oklch(12% 0.03 60);
+  --color-base-content: oklch(96% 0.02 95);
+
+  --color-primary: oklch(60% 0.18 35);
+  --color-primary-content: oklch(8% 0.02 60);
+  --color-secondary: oklch(65% 0.14 45);
+  --color-secondary-content: oklch(10% 0.02 60);
+  --color-accent: oklch(72% 0.18 25);
+  --color-accent-content: oklch(8% 0.02 60);
+
+  --color-neutral: oklch(18% 0.03 60);
+  --color-neutral-content: oklch(96% 0.02 95);
+
+  --color-info: oklch(75% 0.22 220);
+  --color-info-content: oklch(8% 0.02 220);
+  --color-success: oklch(72% 0.27 140);
+  --color-success-content: oklch(8% 0.02 140);
+  --color-warning: oklch(82% 0.27 50);
+  --color-warning-content: oklch(10% 0.02 50);
+  --color-error: oklch(70% 0.32 15);
+  --color-error-content: oklch(8% 0.02 15);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.375rem;
+  --radius-box: 0.5rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  --border: 1px;
+
+  --depth: 1.5;
+  --noise: 0.02;
+}
+
+/* Ensure labels are always positioned on top of fields */
+.form-control {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-control > .label {
+  order: -1;
+  margin-bottom: 0.5rem;
+}

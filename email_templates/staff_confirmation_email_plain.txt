@@ -1,0 +1,45 @@
+WELCOME TO JOHNNY'S CHICKEN STALL!
+
+Confirm Your Staff Account
+============================
+
+Hello and welcome!
+
+Your staff account has been created for Johnny's Chicken Stall. 
+To complete your registration and start accessing the system, please confirm your email address.
+
+Account Details:
+---------------
+Email: {{ .Email }}
+Status: Pending Confirmation
+
+Confirm Your Email:
+------------------
+Click the link below to confirm your email address:
+
+{{ .ConfirmationURL }}
+
+Or copy and paste the link above into your web browser.
+
+Security Note:
+--------------
+This confirmation link will expire in 24 hours for your security. 
+If you didn't request this account, please ignore this email.
+
+What's Next?
+------------
+1. Click the confirmation link above to verify your email
+2. Login to the dashboard using your email and password
+3. Access the Point of Sale system and other features
+4. Start managing sales and inventory for your assigned stall
+
+Need Help?
+----------
+If you have any questions or need assistance, please contact your administrator or email admin@johnnyschickenstall.com
+
+---
+Johnny's Chicken Stall
+Your trusted partner in chicken business management
+
+This is an automated email. Please do not reply.
+
