@@ -20,8 +20,10 @@ function ResetPassword() {
             const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token')
             const type = hashParams.get('type') || queryParams.get('type')
             const code = hashParams.get('code') || queryParams.get('code')
+            const tokenHash = hashParams.get('token_hash') || queryParams.get('token_hash')
+            const isRecoveryFlow = !type || type === 'recovery'
 
-            if (code && type === 'recovery') {
+            if (code && isRecoveryFlow) {
                 const { error } = await supabase.auth.exchangeCodeForSession(code)
                 if (error) {
                     showError('Reset link is invalid or has expired.')
@@ -32,7 +34,21 @@ function ResetPassword() {
                 return
             }
 
-            if (accessToken && type === 'recovery') {
+            if (tokenHash && isRecoveryFlow) {
+                const { error } = await supabase.auth.verifyOtp({
+                    token_hash: tokenHash,
+                    type: 'recovery',
+                })
+                if (error) {
+                    showError('Reset link is invalid or has expired.')
+                    navigate('/login', { replace: true })
+                } else {
+                    setSessionReady(true)
+                }
+                return
+            }
+
+            if (accessToken && isRecoveryFlow) {
                 const { error } = await supabase.auth.setSession({
                     access_token: accessToken,
                     refresh_token: refreshToken || '',
@@ -44,10 +60,11 @@ function ResetPassword() {
                 } else {
                     setSessionReady(true)
                 }
-            } else {
-                showError('Reset link is missing required information.')
-                navigate('/login', { replace: true })
+                return
             }
+
+            showError('Reset link is missing required information.')
+            navigate('/login', { replace: true })
         }
 
         handleRecovery()
