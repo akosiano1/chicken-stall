@@ -322,7 +322,20 @@ serve(async (req) => {
       // Delete auth user first, then profile
       const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(staffId)
       if (authError) {
-        return textResponse(authError.message, 400, req)
+        console.error("auth.admin.deleteUser error", {
+          staffId,
+          message: authError.message,
+          status: authError.status,
+        })
+        return jsonResponse(
+          {
+            message: "Unable to delete auth user",
+            error: authError.message,
+            status: authError.status ?? 400,
+          },
+          400,
+          req,
+        )
       }
 
       // Delete profile (may already be deleted by cascade, but ensure cleanup)
