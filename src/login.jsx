@@ -12,6 +12,9 @@ function Login() {
     const [formData, setFormData] = useState({email: '', password: ''})
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [resetModalOpen, setResetModalOpen] = useState(false)
+    const [resetEmail, setResetEmail] = useState('')
+    const [resetLoading, setResetLoading] = useState(false)
 
     // Handle email confirmation callback
     useEffect(() => {
@@ -124,6 +127,32 @@ function Login() {
         
     }
 
+    const handlePasswordResetRequest = async (e) => {
+        e.preventDefault()
+        if (!resetEmail) {
+            showError('Please enter your email address.')
+            return
+        }
+        try {
+            setResetLoading(true)
+            const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            })
+            if (error) {
+                showError(error.message)
+            } else {
+                showSuccess('Password reset link sent! Please check your email.')
+                setResetModalOpen(false)
+                setResetEmail('')
+            }
+        } catch (err) {
+            console.error('Password reset error:', err)
+            showError('Failed to send password reset email.')
+        } finally {
+            setResetLoading(false)
+        }
+    }
+
 
     return (
         <div className="min-h-screen bg-[#030712] flex items-center justify-center p-6 flex-col">
@@ -221,9 +250,13 @@ function Login() {
                                     Remember me
                                 </span>
                             </label>
-                            <a href="#" className="link text-[#f97316] text-sm hover:text-[#fdba74]">
+                            <button
+                                type="button"
+                                className="link text-[#f97316] text-sm hover:text-[#fdba74]"
+                                onClick={() => setResetModalOpen(true)}
+                            >
                                 Forgot password?
-                            </a>
+                            </button>
                         </div>
 
                         <div className="form-control mt-6">
@@ -239,6 +272,59 @@ function Login() {
                     <div className="divider"></div>
                 </div>
             </div>
+            {resetModalOpen && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
+                    <div className="card w-full max-w-md bg-base-100 border border-primary/40 shadow-2xl">
+                        <div className="card-body gap-4">
+                            <div className="flex items-start justify-between">
+                                <div>
+                                    <h2 className="card-title text-lg text-primary">
+                                        Reset your password
+                                    </h2>
+                                    <p className="text-sm text-base-content/70 mt-1">
+                                        Enter the email associated with your account and we will send you a reset link.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm"
+                                    onClick={() => {
+                                        setResetModalOpen(false)
+                                        setResetEmail('')
+                                    }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            <form onSubmit={handlePasswordResetRequest} className="space-y-4">
+                                <div className="form-control">
+                                    <label className="label" htmlFor="reset-email">
+                                        <span className="label-text font-medium">Email</span>
+                                    </label>
+                                    <input
+                                        id="reset-email"
+                                        type="email"
+                                        className="input input-bordered w-full"
+                                        placeholder="you@example.com"
+                                        value={resetEmail}
+                                        onChange={(e) => setResetEmail(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-control">
+                                    <button
+                                        type="submit"
+                                        className={`btn btn-primary text-white ${resetLoading ? 'loading' : ''}`}
+                                        disabled={resetLoading}
+                                    >
+                                        {resetLoading ? 'Sending link...' : 'Send reset link'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

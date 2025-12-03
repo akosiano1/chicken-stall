@@ -11,6 +11,7 @@ import PointOfSale from './components/PointOfSale'
 import Reports from './Reports'
 import AuditLog from './components/admin/AuditLog'
 import Profile from './Profile'
+import ResetPassword from './ResetPassword'
 import ToastContainer from './components/ToastContainer'
 
 function App() {
@@ -90,6 +91,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
