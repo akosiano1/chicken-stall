@@ -17,13 +17,6 @@ import ToastContainer from './components/ToastContainer'
 function App() {
   const { user, loading } = useAuth()
 
-  // Allow auth callbacks (e.g. password recovery) to reach the Login component
-  // even if a user session already exists.
-  const hasRecoveryParams =
-    typeof window !== 'undefined' &&
-    (window.location.hash.includes('type=recovery') ||
-      window.location.search.includes('type=recovery'))
-
   if (loading) {
     return (
       <div className="min-h-screen bg-base-200 flex items-center justify-center">
@@ -40,7 +33,7 @@ function App() {
           <Routes>
           <Route 
             path="/login" 
-            element={user && !hasRecoveryParams ? <Navigate to="/dashboard" replace /> : <Login />} 
+            element={<Login />} 
           />
           <Route 
             path="/dashboard" 
