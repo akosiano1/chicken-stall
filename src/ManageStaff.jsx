@@ -532,7 +532,7 @@ function ManageStaff() {
       <ConfirmModal
         isOpen={confirmDelete.isOpen}
         title="Delete Staff Member"
-        message="Are you sure you want to delete this staff member? This action cannot be undone."
+        message="Are you sure you want to delete this staff member? This will also permanently delete their transaction records and cannot be undone."
         onConfirm={confirmDeleteStaff}
         onCancel={() => setConfirmDelete({ isOpen: false, staffId: null })}
         confirmText="Delete"

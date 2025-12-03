@@ -90,18 +90,27 @@ function Login() {
         const {data, error} = await supabase.auth.signInWithPassword({email,password})
         setLoading(false)
         
-        if (!data.user?.email_confirmed_at) {
-            showError('Please verify your email before logging in.')
-            await supabase.auth.signOut();
-            return;
+        // Handle invalid credentials or other auth errors first
+        if (error) {
+            const msg = error.message?.toLowerCase() || ''
+            if (msg.includes('email') && msg.includes('confirm')) {
+                showError('Please verify your email before logging in.')
+            } else if (msg.includes('invalid') || msg.includes('credentials')) {
+                showError('Invalid email or password. Please try again.')
+            } else {
+                showError(error.message)
+            }
+            console.error('Login error:', error.message)
+            return
         }
 
-        
-        if(error) {
-            showError(error.message)
-            console.error('Login error:', error.message)
+        if (!data.user?.email_confirmed_at) {
+            showError('Please verify your email before logging in.')
+            await supabase.auth.signOut()
+            return
         }
-        else{
+
+        if(data.user){
             const user = data.user
 
             const { data: profile, error: profileError} = await supabase
@@ -113,6 +122,13 @@ function Login() {
             if(profileError){
                 showError('Failed to load user profile.')
                 console.error('Profile fetch error:', profileError.message)
+                return
+            }
+
+            // Prevent login for inactive staff
+            if (profile.status && profile.status !== 'active') {
+                showError('Your account is inactive. Please contact the administrator.')
+                await supabase.auth.signOut()
                 return
             }
 
@@ -131,7 +147,6 @@ function Login() {
             
             navigate('/dashboard')
         }
-        
     }
 
     const handlePasswordResetRequest = async (e) => {
