@@ -1,182 +1,246 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase } from './supabaseClient'
-import { useNotifications } from './contexts/NotificationContext'
-import logo from './logo.png'
+import { useState, useEffect } from 'react';
+import { supabase } from './supabaseClient'; // adjust path as needed
+import { useNavigate } from 'react-router-dom';
 
 function ResetPassword() {
-    const navigate = useNavigate()
-    const { showError, showSuccess } = useNotifications()
-    const [password, setPassword] = useState('')
-    const [confirmPassword, setConfirmPassword] = useState('')
-    const [loading, setLoading] = useState(false)
-    const [sessionReady, setSessionReady] = useState(false)
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        const handleRecovery = async () => {
-            const hashParams = new URLSearchParams(window.location.hash.substring(1))
-            const queryParams = new URLSearchParams(window.location.search)
-            const accessToken = hashParams.get('access_token') || queryParams.get('access_token')
-            const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token')
-            const type = hashParams.get('type') || queryParams.get('type')
-            const code = hashParams.get('code') || queryParams.get('code')
-            const tokenHash = hashParams.get('token_hash') || queryParams.get('token_hash')
-            const isRecoveryFlow = !type || type === 'recovery'
-
-            // Debug logging to understand reset URL shape in production
-            console.log('[ResetPassword] location', {
-                href: window.location.href,
-                search: window.location.search,
-                hash: window.location.hash,
-            })
-            console.log('[ResetPassword] params', {
-                accessToken,
-                refreshToken,
-                type,
-                code,
-                tokenHash,
-            })
-
-            if (code && isRecoveryFlow) {
-                const { error } = await supabase.auth.exchangeCodeForSession(code)
-                if (error) {
-                    showError('Reset link is invalid or has expired.')
-                } else {
-                    setSessionReady(true)
-                }
-                return
-            }
-
-            if (tokenHash && isRecoveryFlow) {
-                const { error } = await supabase.auth.verifyOtp({
-                    token_hash: tokenHash,
-                    type: 'recovery',
-                })
-                if (error) {
-                    showError('Reset link is invalid or has expired.')
-                } else {
-                    setSessionReady(true)
-                }
-                return
-            }
-
-            if (accessToken && isRecoveryFlow) {
-                const { error } = await supabase.auth.setSession({
-                    access_token: accessToken,
-                    refresh_token: refreshToken || '',
-                })
-
-                if (error) {
-                    showError('Reset link is invalid or has expired.')
-                } else {
-                    setSessionReady(true)
-                }
-                return
-            }
-
-            showError('Reset link is missing required information. Please try opening the link from your email again.')
+  useEffect(() => {
+    // Handle the password recovery token
+    const handlePasswordRecovery = async () => {
+      try {
+        // Check if we have an auth session after Supabase redirect
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          setError('Invalid or expired reset link. Please request a new one.');
+          setVerifying(false);
+          return;
         }
 
-        handleRecovery()
-    }, [navigate, showError])
-
-    const handleUpdatePassword = async (e) => {
-        e.preventDefault()
-        if (password.length < 8) {
-            showError('Password must be at least 8 characters long.')
-            return
-        }
-        if (password !== confirmPassword) {
-            showError('Passwords do not match.')
-            return
+        if (!session) {
+          setError('No valid session found. Please request a new password reset link.');
+          setVerifying(false);
+          return;
         }
 
-        try {
-            setLoading(true)
-            const { error } = await supabase.auth.updateUser({ password })
-            if (error) {
-                showError(error.message)
-            } else {
-                await supabase.auth.signOut()
-                showSuccess('Password updated! You can now sign in.')
-                setTimeout(() => navigate('/login', { replace: true }), 1200)
-            }
-        } catch (err) {
-            console.error('Password update error:', err)
-            showError('Failed to update password. Please try again.')
-        } finally {
-            setLoading(false)
-        }
+        // Session is valid, user can now reset password
+        setVerifying(false);
+      } catch (err) {
+        console.error('Error:', err);
+        setError('Something went wrong. Please try again.');
+        setVerifying(false);
+      }
+    };
+
+    handlePasswordRecovery();
+  }, []);
+
+  const handleReset = async (e) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
     }
 
-    return (
-        <div className="min-h-screen bg-[#030712] flex items-center justify-center p-6 flex-col">
-            <div className="text-center mb-8">
-                <div className="w-24 rounded avatar bg-base-100/10 p-2 mx-auto">
-                    <img src={logo} alt="Fried Chicken Stall logo" className="w-full h-full object-contain" />
-                </div>
-                <h1 className="text-4xl font-extrabold text-[#f97316] mb-2 drop-shadow-lg">
-                    RESET YOUR PASSWORD
-                </h1>
-                <p className="text-lg tracking-wide text-white/90 drop-shadow-md">
-                    Securely update your account access
-                </p>
-            </div>
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
 
-            <div className="card w-full max-w-md bg-base-100 shadow-[0_20px_60px_rgba(0,0,0,0.6)] border border-primary/30">
-                <div className="card-body text-base-content space-y-4">
-                    <h2 className="text-2xl font-bold text-primary text-center">Create a new password</h2>
-                    {sessionReady ? (
-                        <form onSubmit={handleUpdatePassword} className="space-y-4">
-                            <div className="form-control">
-                                <label className="label" htmlFor="new-password">
-                                    <span className="label-text font-medium">New password</span>
-                                </label>
-                                <input
-                                    id="new-password"
-                                    type="password"
-                                    className="input input-bordered w-full"
-                                    placeholder="Enter new password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="form-control">
-                                <label className="label" htmlFor="confirm-password">
-                                    <span className="label-text font-medium">Confirm password</span>
-                                </label>
-                                <input
-                                    id="confirm-password"
-                                    type="password"
-                                    className="input input-bordered w-full"
-                                    placeholder="Re-enter new password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className={`btn w-full border-0 bg-[#b91c1c] hover:bg-[#7f1d1d] text-white font-semibold ${loading ? 'loading' : ''}`}
-                                disabled={loading}
-                            >
-                                {loading ? 'Updating...' : 'Update password'}
-                            </button>
-                        </form>
-                    ) : (
-                        <div className="flex flex-col items-center gap-4 py-8">
-                            <span className="loading loading-spinner loading-lg text-primary"></span>
-                            <p className="text-base-content/70 text-sm text-center">
-                                Verifying your reset link...
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (updateError) {
+        setError(updateError.message);
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
+      
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+      
+    } catch (err) {
+      setError('Failed to update password. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  if (verifying) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        backgroundColor: '#0a0e27'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ color: '#ff6b35', marginBottom: '1rem' }}>RESET YOUR PASSWORD</h2>
+          <p style={{ color: '#fff' }}>Verifying your reset link...</p>
+          <div style={{ marginTop: '1rem' }}>
+            {/* Your loading spinner */}
+            <div className="spinner"></div>
+          </div>
         </div>
-    )
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        backgroundColor: '#0a0e27'
+      }}>
+        <div style={{ textAlign: 'center', color: '#4ade80' }}>
+          <h2>✓ Password Updated Successfully!</h2>
+          <p>Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      minHeight: '100vh',
+      backgroundColor: '#0a0e27',
+      padding: '2rem'
+    }}>
+      <div style={{ 
+        maxWidth: '400px', 
+        width: '100%',
+        backgroundColor: '#1a1f3a',
+        padding: '2rem',
+        borderRadius: '8px'
+      }}>
+        <h2 style={{ color: '#ff6b35', textAlign: 'center', marginBottom: '0.5rem' }}>
+          RESET YOUR PASSWORD
+        </h2>
+        <p style={{ color: '#fff', textAlign: 'center', marginBottom: '2rem', fontSize: '0.9rem' }}>
+          Securely update your account access
+        </p>
+
+        {error && (
+          <div style={{ 
+            backgroundColor: '#ff4444', 
+            color: '#fff', 
+            padding: '0.75rem', 
+            borderRadius: '4px',
+            marginBottom: '1rem',
+            textAlign: 'center'
+          }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleReset}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ color: '#fff', display: 'block', marginBottom: '0.5rem' }}>
+              New Password
+            </label>
+            <input
+              type="password"
+              placeholder="Enter new password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #333',
+                backgroundColor: '#0a0e27',
+                color: '#fff'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ color: '#fff', display: 'block', marginBottom: '0.5rem' }}>
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={6}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '4px',
+                border: '1px solid #333',
+                backgroundColor: '#0a0e27',
+                color: '#fff'
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              backgroundColor: loading ? '#666' : '#ff6b35',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Updating Password...' : 'Update Password'}
+          </button>
+        </form>
+
+        <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+          <button
+            onClick={() => navigate('/login')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#ff6b35',
+              cursor: 'pointer',
+              textDecoration: 'underline'
+            }}
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default ResetPassword
-
+export default ResetPassword;
