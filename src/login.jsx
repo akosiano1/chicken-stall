@@ -143,8 +143,7 @@ function Login() {
         try {
             setResetLoading(true)
             const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-                // Send users back to /login with recovery params; login will forward to /reset-password
-                redirectTo: `${window.location.origin}/login`,
+                redirectTo: `https://chickenstallsyy.vercel.app/reset-password`,
             })
             if (error) {
                 showError(error.message)
