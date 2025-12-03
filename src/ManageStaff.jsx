@@ -148,7 +148,7 @@ function ManageStaff() {
         email: staffEmail,
         contact_number: staffContactNumber || null,
         role: 'staff',
-        status: 'inactive',
+        status: 'active',
         stall_id: selectedStall || null,
       };
 

@@ -176,7 +176,7 @@ serve(async (req) => {
           email,
           contact_number: contactNumber || null,
           role: "staff",
-          status: "inactive",
+          status: "active",
           stall_id: stallId || null,
         },
       ])

@@ -103,13 +103,13 @@ function Login() {
             console.error('Login error:', error.message)
             return
         }
-
+        
         if (!data.user?.email_confirmed_at) {
             showError('Please verify your email before logging in.')
             await supabase.auth.signOut()
             return
         }
-
+        
         if(data.user){
             const user = data.user
 
