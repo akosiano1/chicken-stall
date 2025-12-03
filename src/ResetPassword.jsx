@@ -41,7 +41,6 @@ function ResetPassword() {
                 const { error } = await supabase.auth.exchangeCodeForSession(code)
                 if (error) {
                     showError('Reset link is invalid or has expired.')
-                    navigate('/login', { replace: true })
                 } else {
                     setSessionReady(true)
                 }
@@ -55,7 +54,6 @@ function ResetPassword() {
                 })
                 if (error) {
                     showError('Reset link is invalid or has expired.')
-                    navigate('/login', { replace: true })
                 } else {
                     setSessionReady(true)
                 }
@@ -70,15 +68,13 @@ function ResetPassword() {
 
                 if (error) {
                     showError('Reset link is invalid or has expired.')
-                    navigate('/login', { replace: true })
                 } else {
                     setSessionReady(true)
                 }
                 return
             }
 
-            showError('Reset link is missing required information.')
-            navigate('/login', { replace: true })
+            showError('Reset link is missing required information. Please try opening the link from your email again.')
         }
 
         handleRecovery()
