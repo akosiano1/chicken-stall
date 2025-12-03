@@ -319,7 +319,21 @@ serve(async (req) => {
         return textResponse("Staff ID is required", 400, req)
       }
 
-      // Delete auth user first, then profile
+      // Delete profile (remove FK references before deleting auth user)
+      const { error: profileError } = await supabaseAdmin.from("profiles").delete().eq("id", staffId)
+      if (profileError) {
+        console.error("Profile deletion error", profileError)
+        return jsonResponse(
+          {
+            message: "Unable to delete staff profile",
+            error: profileError.message,
+          },
+          400,
+          req,
+        )
+      }
+
+      // Delete auth user
       const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(staffId)
       if (authError) {
         console.error("auth.admin.deleteUser error", {
@@ -336,13 +350,6 @@ serve(async (req) => {
           400,
           req,
         )
-      }
-
-      // Delete profile (may already be deleted by cascade, but ensure cleanup)
-      const { error: profileError } = await supabaseAdmin.from("profiles").delete().eq("id", staffId)
-      if (profileError) {
-        // Log but don't fail - auth user is already deleted
-        console.warn("Profile deletion warning:", profileError.message)
       }
 
       return new Response(null, {

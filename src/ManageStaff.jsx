@@ -349,18 +349,7 @@ function ManageStaff() {
         stall_id: staffToDelete.stall_id
       } : null;
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', staffId);
-
-      if (profileError) throw profileError;
-
-      try {
-        await deleteStaffAccount(staffId);
-      } catch (authError) {
-        console.warn('Could not delete staff account from auth:', authError);
-      }
+      await deleteStaffAccount(staffId);
 
       // Log audit activity
       if (userProfile && staffToDelete) {
