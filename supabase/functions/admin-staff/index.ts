@@ -110,9 +110,9 @@ serve(async (req) => {
 
     const url = new URL(req.url)
     const segments = url.pathname.replace(/^\/|\/$/g, "").split("/")
-    // Expected path: /admin-staff/staff/...
-    const resource = segments[1]
-    const rest = segments.slice(2)
+    // Expected path: /staff/... (pathname is relative to function name)
+    const resource = segments[0]
+    const rest = segments.slice(1)
 
     if (resource !== "staff") {
       return textResponse("Not Found", 404, req)
@@ -307,10 +307,21 @@ serve(async (req) => {
     if (req.method === "DELETE" && rest.length === 1) {
       const staffId = rest[0]
 
-      await supabaseAdmin.from("profiles").delete().eq("id", staffId)
-      const { error } = await supabaseAdmin.auth.admin.deleteUser(staffId)
-      if (error) {
-        return textResponse(error.message, 400, req)
+      if (!staffId) {
+        return textResponse("Staff ID is required", 400, req)
+      }
+
+      // Delete auth user first, then profile
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(staffId)
+      if (authError) {
+        return textResponse(authError.message, 400, req)
+      }
+
+      // Delete profile (may already be deleted by cascade, but ensure cleanup)
+      const { error: profileError } = await supabaseAdmin.from("profiles").delete().eq("id", staffId)
+      if (profileError) {
+        // Log but don't fail - auth user is already deleted
+        console.warn("Profile deletion warning:", profileError.message)
       }
 
       return new Response(null, {
