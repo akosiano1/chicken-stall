@@ -10,6 +10,7 @@ import DateRangeFilter from './components/common/DateRangeFilter';
 import { applyDateRangeFilter } from './utils/dateFilterUtils';
 import { useDebounce } from './hooks/useDebounce';
 import { useProfile } from './contexts/ProfileContext';
+import ConfirmModal from './components/ConfirmModal';
 
 function Reports() {
   const navigate = useNavigate();
@@ -99,6 +100,7 @@ function Reports() {
   const [editingStockHistory, setEditingStockHistory] = useState(null);
   const [editingActivityHistory, setEditingActivityHistory] = useState(null);
   const [editLoading, setEditLoading] = useState(false);
+  const [confirmDeleteExpense, setConfirmDeleteExpense] = useState({ isOpen: false, expenseId: null });
   
   // Error states
   const [error, setError] = useState('');
@@ -624,6 +626,64 @@ function Reports() {
       loadStatistics();
     } catch (err) {
       setError('Failed to update expense: ' + err.message);
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // Delete expense
+  const handleDeleteExpense = (expenseId) => {
+    setConfirmDeleteExpense({ isOpen: true, expenseId });
+  };
+
+  const handleConfirmDeleteExpense = async () => {
+    const expenseId = confirmDeleteExpense.expenseId;
+    if (!expenseId) return;
+
+    setEditLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      // Get expense data before deleting for audit log
+      const expenseToDelete = expenses.find(exp => exp.expense_id === expenseId);
+      const oldValue = expenseToDelete ? {
+        expense_name: expenseToDelete.expense_name,
+        quantity: expenseToDelete.quantity,
+        cost: expenseToDelete.cost,
+        date: expenseToDelete.date,
+        supplier_name: expenseToDelete.supplier_name,
+        stall_id: expenseToDelete.stall_id
+      } : null;
+
+      const { error } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('expense_id', expenseId);
+
+      if (error) throw error;
+
+      // Log audit activity
+      if (userProfile && expenseToDelete) {
+        await logActivity({
+          action: auditActions.DELETE_EXPENSE,
+          entity: auditEntities.EXPENSE,
+          entityId: expenseId,
+          userId: userProfile.id,
+          userName: userProfile.full_name,
+          details: `Deleted expense: ${expenseToDelete.expense_name}, Cost: ₱${expenseToDelete.cost.toFixed(2)}`,
+          oldValue,
+          stallId: expenseToDelete.stall_id
+        });
+      }
+
+      setSuccess('Expense deleted successfully.');
+      setConfirmDeleteExpense({ isOpen: false, expenseId: null });
+      setEditingExpense(null);
+      loadExpenses();
+      loadStatistics();
+    } catch (err) {
+      setError('Failed to delete expense: ' + err.message);
+      setConfirmDeleteExpense({ isOpen: false, expenseId: null });
     } finally {
       setEditLoading(false);
     }
@@ -1948,11 +2008,11 @@ function Reports() {
               </div>
               <div className="modal-action">
                 <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => handleEditExpense(editingExpense, editingExpense)}
+                  className="btn btn-error btn-sm"
+                  onClick={() => handleDeleteExpense(editingExpense.expense_id)}
                   disabled={editLoading}
                 >
-                  Save
+                  Delete
                 </button>
                 <button
                   className="btn btn-ghost btn-sm"
@@ -1960,6 +2020,13 @@ function Reports() {
                   disabled={editLoading}
                 >
                   Cancel
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => handleEditExpense(editingExpense, editingExpense)}
+                  disabled={editLoading}
+                >
+                  Save
                 </button>
               </div>
             </div>
@@ -2170,6 +2237,18 @@ function Reports() {
             </div>
           </div>
         )}
+
+        {/* Confirm Delete Expense Modal */}
+        <ConfirmModal
+          isOpen={confirmDeleteExpense.isOpen}
+          title="Delete Expense"
+          message="Are you sure you want to delete this expense? This action cannot be undone."
+          onConfirm={handleConfirmDeleteExpense}
+          onCancel={() => setConfirmDeleteExpense({ isOpen: false, expenseId: null })}
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="error"
+        />
       </div>
     </Layout>
   );
