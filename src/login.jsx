@@ -28,6 +28,13 @@ function Login() {
             const type = hashParams.get('type') || queryParams.get('type')
             const refreshToken = hashParams.get('refresh_token') || queryParams.get('refresh_token')
 
+            if (type === 'recovery') {
+                const search = window.location.search || ''
+                const hash = window.location.hash || ''
+                window.location.replace(`/reset-password${search}${hash}`)
+                return
+            }
+
             if (accessToken && (type === 'signup' || type === 'email')) {
                 try {
                     // Set the session with the access token
