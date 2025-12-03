@@ -110,11 +110,19 @@ serve(async (req) => {
 
     const url = new URL(req.url)
     const segments = url.pathname.replace(/^\/|\/$/g, "").split("/")
-    // Expected path: /staff/... (pathname is relative to function name)
-    const resource = segments[0]
-    const rest = segments.slice(1)
+    
+    // Handle pathname structure: pathname includes function name
+    // Example: "/admin-staff/staff/:id/auth" -> segments = ["admin-staff", "staff", ":id", "auth"]
+    // So we skip the first segment (function name) and use the second as resource
+    let resourceIndex = 0
+    if (segments[0] === "admin-staff") {
+      resourceIndex = 1
+    }
+    const resource = segments[resourceIndex]
+    const rest = segments.slice(resourceIndex + 1)
 
     if (resource !== "staff") {
+      console.error(`Invalid resource: ${resource}, pathname: ${url.pathname}, segments:`, segments)
       return textResponse("Not Found", 404, req)
     }
 
