@@ -23,6 +23,20 @@ function ResetPassword() {
             const tokenHash = hashParams.get('token_hash') || queryParams.get('token_hash')
             const isRecoveryFlow = !type || type === 'recovery'
 
+            // Debug logging to understand reset URL shape in production
+            console.log('[ResetPassword] location', {
+                href: window.location.href,
+                search: window.location.search,
+                hash: window.location.hash,
+            })
+            console.log('[ResetPassword] params', {
+                accessToken,
+                refreshToken,
+                type,
+                code,
+                tokenHash,
+            })
+
             if (code && isRecoveryFlow) {
                 const { error } = await supabase.auth.exchangeCodeForSession(code)
                 if (error) {
