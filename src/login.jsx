@@ -113,7 +113,7 @@ function Login() {
         if(data.user){
             const user = data.user
 
-            const { data: profile, error: profileError} = await supabase
+            const { data: profileData, error: profileError} = await supabase
                 .from('profiles')
                 .select("*")
                 .eq('id', user.id)
@@ -123,6 +123,24 @@ function Login() {
                 showError('Failed to load user profile.')
                 console.error('Profile fetch error:', profileError.message)
                 return
+            }
+
+            let profile = profileData
+
+            // Automatically activate newly verified accounts
+            if (profile.status === 'unverified' && user.email_confirmed_at) {
+                const { data: updatedProfile, error: statusUpdateError } = await supabase
+                    .from('profiles')
+                    .update({ status: 'active' })
+                    .eq('id', user.id)
+                    .select()
+                    .single()
+
+                if (statusUpdateError) {
+                    console.error('Status update error:', statusUpdateError.message)
+                } else if (updatedProfile) {
+                    profile = updatedProfile
+                }
             }
 
             // Prevent login for inactive staff

@@ -139,6 +139,21 @@ function ManageStaff() {
         throw new Error('Admin API did not return a userId for the new staff member.');
       }
 
+      // Ensure the Supabase profile row is initialized with expected defaults.
+      const { error: profileInitError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: staffName,
+          contact_number: staffContactNumber || null,
+          status: 'unverified',
+          stall_id: selectedStall || null,
+        })
+        .eq('id', userId);
+
+      if (profileInitError) {
+        throw new Error('Failed to initialize staff profile: ' + profileInitError.message);
+      }
+
       // Note: Confirmation email is automatically sent by the Edge Function
       // No need to call resendStaffInvite here
 
@@ -148,7 +163,7 @@ function ManageStaff() {
         email: staffEmail,
         contact_number: staffContactNumber || null,
         role: 'staff',
-        status: 'active',
+        status: 'unverified',
         stall_id: selectedStall || null,
       };
 
