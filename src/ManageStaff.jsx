@@ -86,22 +86,22 @@ function ManageStaff() {
     return await Promise.all(
       staffData.map(async (staff) => {
         try {
-          const authInfo = await fetchUserAuthStatus(staff.id);
-          const isEmailConfirmed = !!authInfo?.emailConfirmedAt;
+          const authInfo = await fetchUserAuthStatus(staff.id)
+          const isEmailConfirmed = !!authInfo?.emailConfirmedAt
 
-          if (isEmailConfirmed && staff.status === 'inactive') {
-            await supabase
-              .from('profiles')
-              .update({ status: 'active' })
-              .eq('id', staff.id);
-            staff.status = 'active';
+          // Derive a display status that respects both email verification
+          // and the explicit staff.status field controlled by admins.
+          let displayStatus = staff.status
+          if (!isEmailConfirmed) {
+            displayStatus = 'unverified'
           }
 
           return {
             ...staff,
-            displayStatus: isEmailConfirmed ? 'active' : 'unverified',
-            last_sign_in_at: authInfo?.lastSignInAt || null
-          };
+            displayStatus,
+            isEmailConfirmed,
+            last_sign_in_at: authInfo?.lastSignInAt || null,
+          }
         } catch (err) {
           console.error(`Error checking email for ${staff.id}:`, err);
           return {
